@@ -1,0 +1,10 @@
+package internals
+
+import "database/sql"
+
+func InitDB(db *sql.Database) error {
+    {{ range . }}
+        {{ . }}
+    {{ end }}
+
+}
