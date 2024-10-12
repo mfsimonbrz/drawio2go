@@ -46,17 +46,9 @@ func main() {
 	// 	fmt.Print("already exists")
 	// }
 
-	// err = internals.CreateModelsFile(tables, "/Users/marcos.simon/Documents/exampleApp/internals/models")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if err := internals.CreateMainFile("/Users/marcos.simon/Documents/exampleApp"); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	err = internals.CreateDBInitFile(tables, "/Users/marcos.simon/Documents/exampleApp/internals/db")
+	err = internals.CreateModelsFile(tables, "/Users/marcos.simon/Documents/exampleApp/internals/models")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }

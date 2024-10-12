@@ -3,7 +3,6 @@ package internals
 import (
 	"drawio2go/models"
 	"errors"
-	"fmt"
 )
 
 type Tree struct {
@@ -29,24 +28,6 @@ func (n *Node) AddChild(newNode *Node) {
 func (t *Tree) init() {
 	rootElement := Node{Element: nil, Nodes: []*Node{}}
 	t.Root = &rootElement
-}
-
-func (t Tree) Print() {
-	printElements(t.Root)
-}
-
-func printElements(n *Node) {
-	for _, n := range n.Nodes {
-		if len(n.Nodes) > 0 {
-			printElements(n)
-		} else {
-			fmt.Printf("%s\t->\t%s\n", n.Element.Id, n.Element.Value)
-		}
-	}
-
-	if n.Element != nil {
-		fmt.Printf("%s\t->\t%s\n", n.Element.Id, n.Element.Value)
-	}
 }
 
 func (t Tree) PrintStack() *Stack {
@@ -75,14 +56,14 @@ func printStackElements(n *Node, stack *Stack) {
 	}
 }
 
-func (t Tree) getElementById(elementId string, aNode *Node) (*Node, error) {
+func (t Tree) getElement(elementId string, aNode *Node) (*Node, error) {
 	if aNode == nil {
 		return nil, errors.New("element not found")
 	}
 
 	if aNode.Nodes != nil {
 		for _, node := range aNode.Nodes {
-			found, err := t.getElementById(elementId, node)
+			found, err := t.getElement(elementId, node)
 			if err == nil {
 				return found, nil
 			}
@@ -98,6 +79,6 @@ func (t Tree) getElementById(elementId string, aNode *Node) (*Node, error) {
 	return nil, errors.New("element not found")
 }
 
-func (t Tree) GetElementById(elementId string) (*Node, error) {
-	return t.getElementById(elementId, t.Root)
+func (t Tree) getElementById(elementId string) (*Node, error) {
+	return t.getElement(elementId, t.Root)
 }

@@ -20,7 +20,7 @@ func BuildElementTree(diagram *xml.MxFile) *Tree {
 
 	for _, mxCell := range diagram.Diagram.MxGraphModel.Root.MxCells {
 		if mxCell.Parent != "" {
-			node, _ := elements.GetElementById(mxCell.Parent)
+			node, _ := elements.getElementById(mxCell.Parent)
 			if node != nil {
 				child := &models.Element{Id: mxCell.ID, Value: mxCell.Value, Kind: "field"}
 				newNode := &Node{Element: child}
@@ -50,8 +50,8 @@ func ProcessElements(elements *Tree) []*models.Table {
 						if field.Name != "" {
 							field = models.NewField()
 						}
-						field.Name = GetFieldName(elem.Value)
-						field.Type = GetFieldType(elem.Value)
+						field.Name = getFieldName(elem.Value)
+						field.Type = getFieldType(elem.Value)
 						table.AddField(field)
 						if field.Type == "time.Time" {
 							table.Imports = append(table.Imports, "time.Time")

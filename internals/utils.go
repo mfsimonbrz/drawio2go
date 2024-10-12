@@ -1,11 +1,15 @@
 package internals
 
 import (
+	"bytes"
 	"drawio2go/models"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
-func GetFieldName(value string) string {
+func getFieldName(value string) string {
 	normalizedValue := strings.Replace(value, "\u00a0", " ", -1)
 	fieldInfo := strings.Split(normalizedValue, " ")
 	if len(fieldInfo) > 0 {
@@ -16,7 +20,7 @@ func GetFieldName(value string) string {
 	return ""
 }
 
-func GetFieldType(value string) string {
+func getFieldType(value string) string {
 	normalizedValue := strings.Replace(value, "\u00a0", " ", -1)
 	fieldValues := strings.Split(normalizedValue, " ")
 	if len(fieldValues) > 1 {
@@ -39,7 +43,7 @@ func GetFieldType(value string) string {
 	return ""
 }
 
-func GetDatabaseFieldType(value string) string {
+func getDatabaseFieldType(value string) string {
 	if strings.Contains(value, "string") {
 		return "text"
 	} else if strings.Contains(value, "bool") {
@@ -52,7 +56,7 @@ func GetDatabaseFieldType(value string) string {
 	return ""
 }
 
-func HasTimeField(tables []*models.Table) bool {
+func hasTimeField(tables []*models.Table) bool {
 	for _, table := range tables {
 		for _, field := range table.Fields {
 			if field.Type == "time.Time" {
@@ -62,4 +66,33 @@ func HasTimeField(tables []*models.Table) bool {
 	}
 
 	return false
+}
+
+func title(s string) string {
+	caser := cases.Title(language.Und)
+	return caser.String(s)
+}
+
+func normalizeFieldName(field string) string {
+	var sb bytes.Buffer
+	skipUnderscore := false
+	for pos, letter := range field {
+		if pos == 0 {
+			sb.WriteString(strings.ToUpper(string(letter)))
+		} else {
+			if string(letter) == "_" {
+				skipUnderscore = true
+				continue
+			}
+
+			if skipUnderscore {
+				sb.WriteString(strings.ToUpper(string(letter)))
+				skipUnderscore = false
+			} else {
+				sb.WriteString(string(letter))
+			}
+		}
+	}
+
+	return sb.String()
 }

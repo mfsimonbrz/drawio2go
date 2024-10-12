@@ -32,7 +32,7 @@ func TestGetElementById(t *testing.T) {
 	tree.Root.AddChild(node_4)
 	node_5.AddChild(node_6)
 
-	got, _ := tree.GetElementById("4")
+	got, _ := tree.getElementById("4")
 	expected := node_4
 
 	if got != expected {

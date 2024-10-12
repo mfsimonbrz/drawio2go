@@ -7,22 +7,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
-
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
-
-func GenerateStruct(table *models.Table) string {
-	caser := cases.Title(language.Und)
-	var sb bytes.Buffer
-	sb.WriteString(fmt.Sprintf("type %s struct {\n", caser.String(table.Name)))
-	for _, field := range table.Fields {
-		sb.WriteString(fmt.Sprintf("\t%s\t%s\t`%s:\"%s\"`\n", field.Name, field.Type, strings.ToLower(table.Name), strings.ToLower(field.Name)))
-	}
-	sb.WriteString("}\n")
-
-	return sb.String()
-}
 
 func generateCreateTableSQLStatement(table *models.Table) string {
 	var sb bytes.Buffer
@@ -30,9 +15,9 @@ func generateCreateTableSQLStatement(table *models.Table) string {
 	sb.WriteString(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (", strings.ToLower(table.Name)))
 	for pos, field := range table.Fields {
 		if pos > 0 {
-			sb.WriteString(fmt.Sprintf(", %s %s", strings.ToLower(field.Name), GetDatabaseFieldType(strings.ToLower(field.Type))))
+			sb.WriteString(fmt.Sprintf(", %s %s", strings.ToLower(field.Name), getDatabaseFieldType(strings.ToLower(field.Type))))
 		} else {
-			sb.WriteString(fmt.Sprintf("%s %s", strings.ToLower(field.Name), GetDatabaseFieldType(strings.ToLower(field.Type))))
+			sb.WriteString(fmt.Sprintf("%s %s", strings.ToLower(field.Name), getDatabaseFieldType(strings.ToLower(field.Type))))
 		}
 		if !field.Nullable {
 			sb.WriteString(" NOT NULL")
@@ -105,21 +90,33 @@ func GenerateUpdateStatement(table *models.Table) string {
 	return sb.String()
 }
 
-func CreateModelsFile(tables []*models.Table, filePath string) error {
-	var sb bytes.Buffer
-
-	sb.WriteString("package internals\n\n")
-
-	if HasTimeField(tables) {
-		generateImportBlock([]string{"time"})
+func CreateModelsFile(tables []*models.Table, filepath string) error {
+	models := models.Models{HasTimeField: hasTimeField(tables), Tables: tables}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
 	}
 
-	for _, table := range tables {
-		sb.WriteString(GenerateStruct(table))
-		sb.WriteString("\n")
+	templateFile := wd + "/internals/templates/struct.tmpl"
+
+	funcMap := template.FuncMap{
+		"title":     title,
+		"lower":     strings.ToLower,
+		"normalize": normalizeFieldName,
 	}
 
-	err := os.WriteFile(fmt.Sprintf("%s/models.go", filePath), sb.Bytes(), 0755)
+	tmpl, err := template.New("struct.tmpl").Funcs(funcMap).ParseFiles(templateFile)
+
+	if err != nil {
+		return err
+	}
+
+	outputFile, err := os.Create(fmt.Sprintf("%s/models.go", filepath))
+	if err != nil {
+		return err
+	}
+
+	err = tmpl.Execute(outputFile, models)
 	if err != nil {
 		return err
 	}
@@ -128,44 +125,60 @@ func CreateModelsFile(tables []*models.Table, filePath string) error {
 }
 
 func CreateMainFile(filepath string) error {
-	var sb bytes.Buffer
+	imports := []models.Map{{Key: "", Value: "database/sql"}, {Key: "", Value: "fmt"}, {Key: "", Value: "log"}, {Key: "_", Value: "github.com/lib/pq"}, {Key: "", Value: "internals"}}
+	consts := []models.Map{{Key: "host", Value: "\"\""}, {Key: "port", Value: "\"\""}, {Key: "dbname", Value: "\"\""}, {Key: "username", Value: "\"\""}, {Key: "password", Value: "\"\""}}
+	main := models.Main{Imports: imports, Consts: consts}
 
-	sb.WriteString("package main\n\n")
-	sb.WriteString(generateImportBlock([]string{"database/sql", "fmt", "log", "_ github.com/lib/pq"}))
-	sb.WriteString("const (\n")
-	sb.WriteString("\thost     = \"localhost\"\n")
-	sb.WriteString("\tport     = 5432\n")
-	sb.WriteString("\tuser     = \"postgres\"\n")
-	sb.WriteString("\tpassword = \"<password>\"\n")
-	sb.WriteString("\tdbname   = \"<dbname>\"\n")
-	sb.WriteString(")\n\n")
-	sb.WriteString("func main() {\n")
-	sb.WriteString("\tpsqlconn := fmt.Sprintf(\"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable\", host, port, user, password, dbname)\n\n")
-	sb.WriteString("\tdb, err := sql.Open(\"postgres\", psqlconn)\n")
-	sb.WriteString("\tif err != nil {\n")
-	sb.WriteString("\t\tlog.Fatal(err)\n")
-	sb.WriteString("\t}\n\n")
-	sb.WriteString("\tdefer db.Close()\n\n")
-	sb.WriteString("}\n")
-
-	err := os.WriteFile(fmt.Sprintf("%s/main.go", filepath), sb.Bytes(), 0755)
+	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	fmt.Println(sb.String())
+
+	templateFile := wd + "/internals/templates/main.tmpl"
+
+	tmpl, err := template.New("main.tmpl").ParseFiles(templateFile)
+
+	if err != nil {
+		return err
+	}
+
+	outputFile, err := os.Create(fmt.Sprintf("%s/main.go", filepath))
+	if err != nil {
+		return err
+	}
+
+	err = tmpl.Execute(outputFile, main)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func CreateGoModFile(moduleName string, filepath string) error {
-	var sb bytes.Buffer
+	imports := []models.Map{
+		{Key: "github.com/lib/pq", Value: "v1.10.9"},
+	}
+	module := models.Module{Name: moduleName, Imports: imports}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 
-	sb.WriteString(fmt.Sprintf("module %s\n\n", moduleName))
-	sb.WriteString("go 1.22.1\n\n")
-	sb.WriteString("require (\n")
-	sb.WriteString("\tgithub.com/lib/pq\tv1.10.9\n")
-	sb.WriteString(")\n")
+	templateFile := wd + "/internals/templates/gomod.tmpl"
 
-	err := os.WriteFile(fmt.Sprintf("%s/go.mod", filepath), sb.Bytes(), 0755)
+	tmpl, err := template.New("gomod.tmpl").ParseFiles(templateFile)
+
+	if err != nil {
+		return err
+	}
+
+	outputFile, err := os.Create(fmt.Sprintf("%s/go.mod", filepath))
+	if err != nil {
+		return err
+	}
+
+	err = tmpl.Execute(outputFile, module)
 	if err != nil {
 		return err
 	}
@@ -174,70 +187,31 @@ func CreateGoModFile(moduleName string, filepath string) error {
 }
 
 func CreateDBInitFile(tables []*models.Table, filepath string) error {
-	templateFile := "./internals/templates/init_db.tmpl"
-	// funcMap := template.FuncMap{
-	// 	"sql_statement": generateCreateTableSQLStatement,
-	// }
-	tmpl, err := template.New("init_db").ParseFiles(templateFile)
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	templateFile := wd + "/internals/templates/init_db.tmpl"
+
+	funcMap := template.FuncMap{
+		"sql_statement": generateCreateTableSQLStatement,
+		"upper":         strings.ToUpper,
+	}
+	tmpl, err := template.New("init_db.tmpl").Funcs(funcMap).ParseFiles(templateFile)
 
 	if err != nil {
 		return err
 	}
 
-	// outputFile, err := os.Create(fmt.Sprintf("%s/db.go", filepath))
-	// if err != nil {
-	// 	return err
-	// }
-	a := []int{1, 2, 3, 4, 5}
-	err = tmpl.Execute(os.Stdout, a)
+	outputFile, err := os.Create(fmt.Sprintf("%s/db.go", filepath))
 	if err != nil {
 		return err
 	}
-
-	// var sb bytes.Buffer
-
-	// sb.WriteString("package internals\n\n")
-	// sb.WriteString(generateImportBlock([]string{"database/sql", "log"}))
-	// sb.WriteString("\n\nfunc InitDB(db *sql.DB) error {\n")
-	// attribution := ":="
-	// for pos, table := range tables {
-	// 	if pos > 0 {
-	// 		attribution = "="
-	// 	}
-	// 	sb.WriteString(fmt.Sprintf("\t//%s\n", strings.ToLower(table.Name)))
-	// 	sb.WriteString(fmt.Sprintf("\tquery %s \"%s\"\n", attribution, generateCreateTableSQLStatement(table)))
-	// 	sb.WriteString(fmt.Sprintf("\t_, err %s db.Query(query)\n", attribution))
-	// 	sb.WriteString("\tif err != nil {\n")
-	// 	sb.WriteString("\t\tlog.Fatal(err)\n")
-	// 	sb.WriteString("\t}\n\n")
-	// }
-	// sb.WriteString("\treturn nil\n")
-	// sb.WriteString("}")
-
-	// err = os.WriteFile(fmt.Sprintf("%s/db.go", filepath), sb.Bytes(), 0755)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// fmt.Println(sb.String())
+	err = tmpl.Execute(outputFile, tables)
+	if err != nil {
+		return err
+	}
 
 	return nil
-}
-
-func generateImportBlock(importList []string) string {
-	var sb bytes.Buffer
-
-	sb.WriteString("import (\n")
-	for _, imp := range importList {
-		if imp[0] == '_' {
-			sb.WriteString("\t_")
-			sb.WriteString(fmt.Sprintf("\t\"%s\"\n", imp[2:]))
-		} else {
-			sb.WriteString(fmt.Sprintf("\t\"%s\"\n", imp))
-		}
-	}
-
-	sb.WriteString(")\n")
-
-	return sb.String()
 }

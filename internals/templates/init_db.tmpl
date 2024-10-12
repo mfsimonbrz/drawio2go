@@ -2,9 +2,14 @@ package internals
 
 import "database/sql"
 
-func InitDB(db *sql.Database) error {
-    {{ range . }}
-        {{ . }}
-    {{ end }}
+func InitDB(db *sql.DB) error {
+    {{ range $pos, $table := . }}
+        //{{ upper $table.Name }}
+        _, err {{  if eq $pos 0 }} := {{ else }} = {{ end }}db.Query("{{ sql_statement $table }}")
+        if err != nil {
+            return err
+        }
+    {{- end }}
 
+    return nil
 }

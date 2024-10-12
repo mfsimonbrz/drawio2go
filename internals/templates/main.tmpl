@@ -1,0 +1,25 @@
+package main
+
+import (
+	{{ range .Imports }}
+    {{ if ne .Key "" }}{{ .Key }}{{ end }} "{{ .Value }}"
+    {{- end }}
+)
+
+const (
+    {{ range .Consts }}
+    {{ .Key }} = {{ .Value -}}
+    {{ end }}
+)
+
+func main() {
+	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+
+	db, err := sql.Open("postgres", psqlconn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+    internals.InitDB(db)
+}
