@@ -52,6 +52,8 @@ func getDatabaseFieldType(value string) string {
 		return "double"
 	} else if strings.Contains(value, "time") {
 		return "timestamp"
+	} else if strings.Contains(value, "int") {
+		return "integer"
 	}
 	return ""
 }
@@ -95,4 +97,8 @@ func normalizeFieldName(field string) string {
 	}
 
 	return sb.String()
+}
+
+func minus(a int, b int) int {
+	return a - b
 }

@@ -6,7 +6,7 @@ import "time"
 {{- range .Tables }}
 type {{ title .Name }} struct {
     {{ range .Fields }}
-    {{- normalize .Name }} {{ .Type }} "json:{{ lower .Name }}"
+    {{- normalize .Name }} {{ .Type }} `json:"{{ lower .Name }}"`
     {{ end }}
 }
 {{ end }}

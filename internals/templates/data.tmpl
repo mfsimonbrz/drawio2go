@@ -1,0 +1,85 @@
+package data
+
+import (
+        "database/sql"
+        "{{ .ModuleName }}/internals/models"
+    )
+
+type {{title .Table.Name}}Handler struct {
+	DB *sql.DB
+}
+
+func New{{title .Table.Name}}Handler(db *sql.DB) *{{title .Table.Name}}Handler {
+    return &{{title .Table.Name}}Handler{DB : db}
+}
+
+func (h *{{title .Table.Name}}Handler) Insert{{title .Table.Name}}({{ .Table.Name }} *models.{{ title .Table.Name }}) (id int, err error) {
+    sql := "{{ insert .Table }}"
+    {{ $table := .Table }}
+    err = h.DB.QueryRow(sql, {{ range $pos, $field := .Table.Fields }}{{ if not $field.Primary }}{{ $table.Name -}}.{{- normalize $field.Name -}}{{end }}{{- if lt $pos (minus (len $table.Fields) 2) -}}, {{ end }}{{ end }}).Scan(&id)
+
+    if err != nil {
+        return 0, err
+    }
+
+    return id, nil
+}
+
+func (h *{{title .Table.Name}}Handler) Get{{title .Table.Name}}() ([]*models.{{- title .Table.Name}}, error) {
+    var result []*models.{{- title .Table.Name}} = []*models.{{- title .Table.Name}}{}
+    sql := "{{ get .Table }}"
+
+    rows, err := h.DB.Query(sql)
+    if err != nil {
+        return nil, err
+    }
+
+    defer rows.Close()
+
+    for rows.Next() {
+        var r models.{{ title .Table.Name }}
+        err = rows.Scan({{ range $pos, $field := .Table.Fields }} {{- if gt $pos 0 -}}, {{ end }}&r.{{ normalize $field.Name }}{{ end }})
+        if err != nil {
+            continue
+        }
+
+        result = append(result, &r)
+
+    }
+
+    return result, nil
+}
+
+func (h *{{title .Table.Name}}Handler) Get{{title .Table.Name}}ById({{- .Table.Name }}_id int) (*models.{{- title .Table.Name}}, error) {
+    sql := "{{ getById .Table }}"
+    row := h.DB.QueryRow(sql, {{- .Table.Name }}_id)
+
+    var r models.{{ title .Table.Name }}
+    err := row.Scan({{ range $pos, $field := .Table.Fields }} {{- if gt $pos 0 -}}, {{ end }}&r.{{ normalize $field.Name }}{{ end }})
+    if err != nil {
+        return nil, err
+    }
+    
+    return &r, nil
+}
+
+func (h *{{title .Table.Name}}Handler) Update{{title .Table.Name}}({{ .Table.Name }} *models.{{ title .Table.Name }}) error {
+    sql := "{{ update .Table }}"
+    {{ $id := (index .Table.Fields 0) }}
+    _, err := h.DB.Exec(sql, {{ range $pos, $field := .Table.Fields }}{{- if gt $pos 0 -}}, {{ end }}{{ if not $field.Primary }}{{ $table.Name -}}.{{- normalize $field.Name -}}{{ else }}{{ $id = $field }}{{end }}{{ end }}{{ .Table.Name }}.{{ normalize $id.Name }})
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func (h *{{title .Table.Name}}Handler) Delete{{title .Table.Name}}({{- .Table.Name }}_id int) error {
+    sql := "{{ delete .Table }}"
+    _, err := h.DB.Exec(sql, {{- .Table.Name }}_id)
+    if err != nil {
+        return err
+    }
+    
+    return nil
+}

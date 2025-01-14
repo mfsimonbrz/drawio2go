@@ -33,9 +33,22 @@ type Map struct {
 type Main struct {
 	Imports []Map
 	Consts  []Map
+	Tables  []*Table
 }
 
 type Models struct {
 	HasTimeField bool
 	Tables       []*Table
+}
+
+type DataInfo struct {
+	ModuleName string
+	Table      *Table
+}
+
+type ForeignKeyInfo struct {
+	OriginTableName      string
+	OriginFieldName      string
+	DestinationTableName string
+	DestinationFieldName string
 }

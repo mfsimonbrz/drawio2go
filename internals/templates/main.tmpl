@@ -10,10 +10,12 @@ const (
     {{ range .Consts }}
     {{ .Key }} = {{ .Value -}}
     {{ end }}
+	host = ""
+	port = ""
 )
 
 func main() {
-	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	psqlconn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUserName, dbPassword, dbName)
 
 	db, err := sql.Open("postgres", psqlconn)
 	if err != nil {
@@ -21,5 +23,24 @@ func main() {
 	}
 
 	defer db.Close()
-    internals.InitDB(db)
+
+	// comment this block after the first run, as it only initiates the database
+	err = data.InitDB(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	router := gin.Default()
+	{{range .Tables}}
+	{{.Name}}Handler := data.New{{title .Name}}Handler(db)
+	{{.Name}}Service := web.New{{title .Name}}Service({{.Name}}Handler)
+
+	router.GET("/{{.Name}}", {{.Name}}Service.Get{{title .Name}})
+	router.GET("/{{.Name}}/:id", {{.Name}}Service.Get{{title .Name}}ById)
+	router.POST("/{{.Name}}", {{.Name}}Service.Post{{title .Name}})
+	router.DELETE("/{{.Name}}/:id", {{.Name}}Service.Delete{{title .Name}})
+	router.PATCH("/{{.Name}}/:id", {{.Name}}Service.Patch{{title .Name}})
+	{{end}}
+
+	router.Run(fmt.Sprintf("%s:%s", host, port))
 }

@@ -1,11 +1,10 @@
-package internals
+package data
 
 import "database/sql"
 
 func InitDB(db *sql.DB) error {
-    {{ range $pos, $table := . }}
-        //{{ upper $table.Name }}
-        _, err {{  if eq $pos 0 }} := {{ else }} = {{ end }}db.Query("{{ sql_statement $table }}")
+    {{ range $pos, $statment := . }}
+        _, err {{  if eq $pos 0 }} := {{ else }} = {{ end }}db.Query("{{ $statment }}")
         if err != nil {
             return err
         }
