@@ -26,7 +26,7 @@ func getFieldType(value string) string {
 	if len(fieldValues) > 1 {
 		// first position is the field name
 		originalFieldType := strings.Trim(fieldValues[1], "")
-		if strings.Contains(originalFieldType, "char") {
+		if strings.Contains(originalFieldType, "char") || strings.Contains(originalFieldType, "text") {
 			return "string"
 		} else if strings.Contains(originalFieldType, "bool") {
 			return "bool"

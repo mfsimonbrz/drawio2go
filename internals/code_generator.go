@@ -133,6 +133,10 @@ func CreateModelsFile(tables []*models.Table, filepath string) error {
 		return err
 	}
 
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(filepath, 0700)
+	}
+
 	outputFile, err := os.Create(fmt.Sprintf("%s/models.go", filepath))
 	if err != nil {
 		return err
@@ -148,7 +152,7 @@ func CreateModelsFile(tables []*models.Table, filepath string) error {
 
 func CreateMainFile(moduleName string, tables []*models.Table, filepath string) error {
 	imports := []models.Map{{Key: "", Value: "database/sql"}, {Key: "", Value: "fmt"}, {Key: "", Value: "log"}, {Key: "_", Value: "github.com/lib/pq"}, {Key: "", Value: fmt.Sprintf("%s/internals/data", moduleName)}, {Key: "", Value: fmt.Sprintf("%s/internals/web", moduleName)}, {Key: "", Value: "github.com/gin-gonic/gin"}}
-	consts := []models.Map{{Key: "dbHost", Value: "\"\""}, {Key: "dbPort", Value: "\"\""}, {Key: "dbName", Value: "\"\""}, {Key: "dbUserName", Value: "\"\""}, {Key: "dbPassword", Value: "\"\""}}
+	consts := []models.Map{{Key: "dbHost", Value: "\"\""}, {Key: "dbPort", Value: "\"\""}, {Key: "dbName", Value: "\"\""}, {Key: "dbUserName", Value: "\"\""}, {Key: "dbPassword", Value: "\"\""}, {Key: "host", Value: "\"\""}, {Key: "port", Value: "\"\""}}
 	main := models.Main{Imports: imports, Consts: consts, Tables: tables}
 
 	wd, err := os.Getwd()
@@ -165,6 +169,10 @@ func CreateMainFile(moduleName string, tables []*models.Table, filepath string) 
 
 	if err != nil {
 		return err
+	}
+
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(filepath, 0700)
 	}
 
 	outputFile, err := os.Create(fmt.Sprintf("%s/main.go", filepath))
@@ -198,6 +206,10 @@ func CreateGoModFile(moduleName string, filepath string) error {
 		return err
 	}
 
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(filepath, 0700)
+	}
+
 	outputFile, err := os.Create(fmt.Sprintf("%s/go.mod", filepath))
 	if err != nil {
 		return err
@@ -223,6 +235,9 @@ func CreateDBInitFile(tables []*models.Table, filepath string) error {
 
 	if err != nil {
 		return err
+	}
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(filepath, 0700)
 	}
 
 	outputFile, err := os.Create(fmt.Sprintf("%s/db.go", filepath))
@@ -260,6 +275,10 @@ func CreateDataFiles(moduleName string, tables []*models.Table, filepath string)
 		return err
 	}
 
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(filepath, 0700)
+	}
+
 	for _, table := range tables {
 		outputFile, err := os.Create(fmt.Sprintf("%s/%s.go", filepath, table.Name))
 		if err != nil {
@@ -288,6 +307,10 @@ func CreateWebFiles(moduleName string, tables []*models.Table, filepath string) 
 	tmpl, err := template.New("web.tmpl").Funcs(funcMap).ParseFiles(templateFile)
 	if err != nil {
 		return err
+	}
+
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(filepath, 0700)
 	}
 
 	for _, table := range tables {

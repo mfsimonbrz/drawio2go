@@ -38,11 +38,6 @@ func (t Tree) PrintStack() *Stack {
 }
 
 func printStackElements(n *Node, stack *Stack) {
-	if n.Element != nil && n.Element.Kind == "table" {
-		stopNode := &Node{Element: &models.Element{Value: "stop", Kind: "stop"}}
-		stack.Push(stopNode)
-	}
-
 	for _, n := range n.Nodes {
 		if len(n.Nodes) > 0 {
 			printStackElements(n, stack)

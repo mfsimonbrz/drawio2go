@@ -44,31 +44,38 @@ func ProcessElements(elements *Tree) []*models.Table {
 			if elem.Kind == "table" {
 				table = models.NewTable()
 				table.Name = strings.ToLower(elem.Value)
+				tables = append(tables, table)
 			} else {
-				if elem.Kind != "stop" {
-					if !(strings.Contains(elem.Value, "PK") || strings.Contains(elem.Value, "FK")) {
-						if field.Name != "" {
-							field = models.NewField()
-						}
-						field.Name = getFieldName(elem.Value)
-						field.Type = getFieldType(elem.Value)
-						table.AddField(field)
-						if field.Type == "time.Time" {
-							table.Imports = append(table.Imports, "time.Time")
-						}
+				if !(strings.Contains(elem.Value, "PK") || strings.Contains(elem.Value, "FK")) {
+					if field.Name != "" {
+						field = models.NewField()
+					}
 
-						if strings.Contains(elem.Value, "NOT NULL") {
-							field.Nullable = false
-						}
-					} else {
-						if strings.Contains(elem.Value, "PK") {
-							field.Primary = true
-						} else if strings.Contains(elem.Value, "FK") {
-							field.Foreign = true
-						}
+					field.Name = getFieldName(elem.Value)
+					field.Type = getFieldType(elem.Value)
+					table.AddField(field)
+
+					if field.Type == "time.Time" {
+						table.Imports = append(table.Imports, "time.Time")
+					}
+
+					if strings.Contains(elem.Value, "NOT NULL") {
+						field.Nullable = false
 					}
 				} else {
-					tables = append(tables, table)
+					if field.Name != "" {
+						field = models.NewField()
+					}
+
+					field.Name = getFieldName(elem.Value)
+					field.Type = getFieldType(elem.Value)
+					table.AddField(field)
+
+					if strings.Contains(elem.Value, "PK") {
+						field.Primary = true
+					} else if strings.Contains(elem.Value, "FK") {
+						field.Foreign = true
+					}
 				}
 			}
 		}

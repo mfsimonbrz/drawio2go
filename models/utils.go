@@ -7,7 +7,19 @@ import (
 )
 
 func (t *Table) AddField(aField *Field) {
-	t.Fields = append(t.Fields, aField)
+	if !t.Contains(aField) {
+		t.Fields = append(t.Fields, aField)
+	}
+}
+
+func (t Table) Contains(aField *Field) bool {
+	for _, field := range t.Fields {
+		if field.Name == aField.Name {
+			return true
+		}
+	}
+
+	return false
 }
 
 func NewTable() *Table {
